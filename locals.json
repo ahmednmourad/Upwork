@@ -1,0 +1,10 @@
+{
+    "Parameters": {
+      "ENVIRONMENT": "local",
+      "RDS_HOST": "host.docker.internal",
+      "RDS_USER": "root",
+      "RDS_PASSWORD": 123456789,
+      "RDS_DATABASE": "test-db",
+      "LOG_LEVEL": "debug"
+    }
+  }

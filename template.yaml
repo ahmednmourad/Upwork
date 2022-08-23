@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: This stack creates an API Gateway along with some lambda functions
+Metadata:
+  Authors:
+    Description: Ahmad Nabil (ahmednmourad@gmail.com)
+Parameters:
+  ProjectName:
+    Type: String
+  EnvironmentName:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+Conditions:
+  EnvironmentIsProd: !Equals [ !Ref EnvironmentName, prod ]
+Globals:
+  Function:
+    Runtime: nodejs16.x
+    Handler: index.handler
+    Timeout: 30
+    Architectures: 
+      - arm64
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref EnvironmentName
+        LOG_LEVEL: !If [ EnvironmentIsProd, error, debug ]
+        RDS_HOST: !ImportValue  DBProxyEndpoint
+        RDS_USER: !Join ['', ['{{resolve:secretsmanager:', !ImportValue DBSecretARN, ':SecretString:username}}' ]]
+        RDS_PASSWORD: !Join ['', ['{{resolve:secretsmanager:', !ImportValue DBSecretARN, ':SecretString:password}}' ]]
+        RDS_DATABASE: test-db
+    Layers:
+      - !Ref LambdaSharedUtilsLayer
+Resources:
+  ################################################################################
+  #                                 API Gateway                                  #
+  ################################################################################
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref EnvironmentName
+      Cors:
+      # Could have a custom API Gateway domain if required
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowMethods: "'OPTIONS,POST,GET,PUT,DELETE'"
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: '{ "message": $context.error.messageString, "error": "$context.error.validationErrorString" }'
+        DEFAULT_5xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+          ResponseTemplates:
+            application/json: '{ "message": $context.error.messageString }'
+      OpenApiVersion: "3.0.1"
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: openapi.yaml
+
+
+  ################################################################################
+  #                               Lambda Functions                               #
+  ################################################################################
+  # Lambda naming convention: <project>-<environment>-<service>-<function-name>
+
+  CreateContact:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-${EnvironmentName}-contact-create
+      CodeUri: functions/contact/create
+      MemorySize: 128
+      Description: Creats a contact
+      Layers:
+        - !Ref MySQL2
+
+  GetContact:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-${EnvironmentName}-contact-get
+      CodeUri: functions/contact/get
+      MemorySize: 128
+      Description: Gets a contact
+      Layers:
+        - !Ref MySQL2
+
+
+  ################################################################################
+  #                                Lambda Layers                                 #
+  ################################################################################
+
+  Mysql2:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: mysql2
+      ContentUri: layers/mysql2
+      CompatibleRuntimes:
+        - nodejs14.x
+      RetentionPolicy: Retain
+
+  LambdaSharedUtilsLayer:
+    Type: AWS::Serverless::LayerVersion
+    Description: Custom lambda layer for shared utilities.
+    Properties:
+      LayerName: lambda-shared-utils
+      ContentUri: layers/lambda-shared-utils
+      CompatibleRuntimes:
+        - nodejs14.x
+      RetentionPolicy: Delete
+
+Outputs:
+  Api:
+    Description: The ID of the REST API
+    Value: !Ref Api

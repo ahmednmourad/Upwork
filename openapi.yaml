@@ -1,0 +1,145 @@
+openapi: 3.0.1
+info:
+  title: Upwork
+  version: "1.0.0"
+  contact:
+    email: ahmednmourad@gmail.com
+servers:
+  - url: http://localhost:3000
+paths:
+  /contact:
+    post:
+      tags:
+        - Contacts
+      summary: creates a contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContact"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        default:
+          $ref: "#/components/responses/DefaultError"
+      x-amazon-apigateway-integration:
+        httpMethod: post
+        type: aws_proxy
+        credentials:
+          Fn::GetAtt: [ApiInvokeLambdaRole, Arn]
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateContact.Arn}/invocations
+    get:
+      tags:
+        - Contacts
+      summary: Get a contact
+      parameters:
+        - name: plateNumber
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                    example: Data found
+                  data:
+                    $ref: "#/components/schemas/GetContact"
+        default:
+          $ref: "#/components/responses/DefaultError"
+      x-amazon-apigateway-integration:
+        httpMethod: post
+        type: aws_proxy
+        credentials:
+          Fn::GetAtt: [ApiInvokeLambdaRole, Arn]
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetContact.Arn}/invocations
+components:
+  schemas:
+    ######## Contact ########
+
+    CreateContact:
+      title: CreateContact
+      type: object
+      additionalProperties: false
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    GetContact:
+      title: GetContact
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    ######## General ########
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        message:
+          type: string
+          example: Something went wrong
+  responses:
+    OK:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Success"
+    Created:
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Success"
+    DefaultError:
+      description: Unexpected Error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+x-amazon-apigateway-request-validators:
+  basic:
+    validateRequestBody: true
+    validateRequestParameters: true
+  params-only:
+    validateRequestBody: false
+    validateRequestParameters: true
+x-amazon-apigateway-request-validator: basic

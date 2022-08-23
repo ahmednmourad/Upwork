@@ -1,0 +1,39 @@
+version = 0.1
+[default]
+[default.build]
+
+[default.local_invoke]
+[default.local_invoke.parameters]
+env_vars="locals.json"
+
+[default.local_start_api]
+[default.local_start_api.parameters]
+env_vars="locals.json"
+skip_pull_image=true
+
+[default.local_start_lambda]
+[default.local_start_lambda.parameters]
+env_vars="locals.json"
+skip_pull_image=true
+# sam local start-api 2>&1 | % {$_.ToString().replace("`r`n","`n")}
+# sam local start-api 2>&1 | tr "\r" "\n" (MacOS)
+
+[dev.deploy]
+[dev.deploy.parameters]
+stack_name = "serverless-dev"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-8uhkgw39larl"
+s3_prefix = "serverless-dev"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = ["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"]
+parameter_overrides = "EnvironmentName=\"dev\" ProjectName=\"test\" "
+
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "serverless-prod"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-8uhkgw39larl"
+s3_prefix = "serverless-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = ["CAPABILITY_IAM", "CAPABILITY_AUTO_EXPAND"]
+parameter_overrides = "EnvironmentName=\"prod\" ProjectName=\"test\" "

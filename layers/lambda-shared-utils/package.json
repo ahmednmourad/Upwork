@@ -1,0 +1,19 @@
+{
+  "name": "lambda-shared-utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Ahmad Nabil",
+  "license": "ISC",
+  "dependencies": {
+    "lambda-shared-utils": "file:lambda-shared-utils-1.0.0.tgz"
+  },
+  "devDependencies": {
+    "pino": "^7.9.2",
+    "pino-pretty": "^7.6.0"
+  }
+}
